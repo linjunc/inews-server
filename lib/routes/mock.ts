@@ -133,6 +133,7 @@ router.post("/add_mock_data", async (req, res) => {
       "news_fashion",
       "news_history",
     ];
+
     const data = response.data.data;
 
     for (let i = 0; i < data.length; i++) {

@@ -5,6 +5,7 @@ import authenticateToken from "../utils/auth";
 
 import userModel from "../model/user";
 import articleModel from "../model/article";
+import { getToken } from "../utils/token";
 
 const router = express.Router();
 
@@ -108,7 +109,7 @@ router.get(
 );
 
 // 查询文章详情
-router.get("/article_content", authenticateToken, async (req, res) => {
+router.get("/article_content", async (req, res) => {
   try {
     let { item_id } = req.query;
     if (!item_id) {
@@ -153,9 +154,11 @@ router.get("/article_content", authenticateToken, async (req, res) => {
       { read_count: article.read_count }
     );
 
+    const userToken = getToken(req);
+
     const user = await userModel.findOne(
       {
-        _id: req.user?.id,
+        _id: userToken?.id,
       },
       {
         digg_article_id_list: 1,
@@ -176,7 +179,7 @@ router.get("/article_content", authenticateToken, async (req, res) => {
         user.history_id_list.push(item_id);
         await userModel.updateOne(
           {
-            _id: req.user?.id,
+            _id: userToken?.id,
           },
           user
         );
@@ -322,7 +325,7 @@ router.put("/article_like", authenticateToken, async (req, res) => {
   }
 });
 // 查询作者文章
-router.get("/article_list_user", authenticateToken, async (req, res) => {
+router.get("/article_list_user", async (req, res) => {
   try {
     let { user_id, n, skip } = req.query;
     const currentNum = Number(n);
@@ -335,9 +338,11 @@ router.get("/article_list_user", authenticateToken, async (req, res) => {
     const { nameMap } = await map();
     const { projection } = await getProjection();
 
+    const userToken = getToken(req);
+
     const myself = await userModel.findOne(
       {
-        _id: req.user?.id,
+        _id: userToken?.id,
       },
       {
         digg_article_id_list: 1,
@@ -363,7 +368,7 @@ router.get("/article_list_user", authenticateToken, async (req, res) => {
 
     const newArticles = [];
     for (let i = 0; i < articles.length; i++) {
-      const temp: any = { ...articles[i] };
+      const temp: any = { ...(articles[i] as any)._doc };
       const tag_name = nameMap.get(articles[i].tag);
 
       temp.tag_name = tag_name.slice(0, tag_name.length - 1);
@@ -475,5 +480,5 @@ router.put("/article_search", async (req, res) => {
 });
 
 export default (app: express.Application) => {
-  app.use("/article", router);
+  app.use("", router);
 };

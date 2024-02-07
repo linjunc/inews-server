@@ -242,7 +242,7 @@ router.put("/comment_digg", authenticateToken, async (req, res) => {
 });
 
 // 通过文章id获取评论列表
-router.get("/comment_list", authenticateToken, async (req, res) => {
+router.get("/comment_list", async (req, res) => {
   try {
     let { article_id, n, skip } = req.query;
     const currentNum = Number(n);
