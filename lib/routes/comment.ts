@@ -530,5 +530,5 @@ router.get("/reply_list", authenticateToken, async (req, res) => {
 });
 
 export default (app: express.Application) => {
-  app.use("/article", router);
+  app.use("", router);
 };
