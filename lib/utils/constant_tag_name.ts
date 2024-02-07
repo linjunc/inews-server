@@ -1,7 +1,7 @@
 /**
  * @return {map} 标签对应中文名的map
  */
-module.exports = async function (params, context) {
+export default async function () {
   const nameMap = new Map();
   // 两个数组顺序需要对应
   const tagList = [
@@ -15,7 +15,6 @@ module.exports = async function (params, context) {
     "news_world",
     "news_fashion",
     "news_history",
-    "news",
   ];
 
   const nameList = [
@@ -29,7 +28,6 @@ module.exports = async function (params, context) {
     "国际类",
     "时尚类",
     "历史类",
-    "新类",
   ];
   for (let i = 0; i < tagList.length; i++) {
     nameMap.set(tagList[i], nameList[i]);
@@ -38,4 +36,4 @@ module.exports = async function (params, context) {
   return {
     nameMap,
   };
-};
+}

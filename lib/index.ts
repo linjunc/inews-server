@@ -1,20 +1,20 @@
-const express = require("express");
-const mongoose = require("mongoose");
-// 解析 post 请求
-const bodyParser = require("body-parser");
+import express from "express";
+import mongoose from "mongoose";
+import bodyParser from "body-parser";
+import cors from "cors";
+
 const app = express();
 const port = 3001;
 
-app.use(require("cors")());
+app.use(cors());
 app.use(express.json());
+
 // 配置 body-parser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //连接数据库
-mongoose.connect("mongodb://localhost:27017/news", {
-  useNewUrlParser: true,
-});
+mongoose.connect("mongodb://localhost:27017/news");
 
 //监听数据库连接状态
 mongoose.connection.once("open", () => {
@@ -24,8 +24,14 @@ mongoose.connection.once("close", () => {
   console.log("数据库断开……");
 });
 
-require("./routes/users")(app);
-require("./routes/article")(app);
-require("./routes/comment")(app);
-require("./routes/mock")(app);
+import usersRoute from "./routes/users";
+import articleRoute from "./routes/article";
+import commentRoute from "./routes/comment";
+import mockRoute from "./routes/mock";
+
+usersRoute(app);
+articleRoute(app);
+commentRoute(app);
+mockRoute(app);
+
 app.listen(port, () => console.log(`http://localhost:3001`));
