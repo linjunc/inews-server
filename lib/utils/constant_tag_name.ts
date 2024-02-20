@@ -15,6 +15,7 @@ export default async function () {
     "news_world",
     "news_fashion",
     "news_history",
+    "news_air",
   ];
 
   const nameList = [
@@ -28,6 +29,7 @@ export default async function () {
     "国际类",
     "时尚类",
     "历史类",
+    "航空类",
   ];
   for (let i = 0; i < tagList.length; i++) {
     nameMap.set(tagList[i], nameList[i]);

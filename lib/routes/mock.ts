@@ -3,6 +3,7 @@ import axios from "axios";
 
 import userModel from "../model/user";
 import articleModel from "../model/article";
+import { picReChange } from "../utils/picReChange";
 
 const router = express.Router();
 
@@ -132,6 +133,7 @@ router.post("/add_mock_data", async (req, res) => {
       "news_world",
       "news_fashion",
       "news_history",
+      "news_air",
     ];
 
     const data = response.data.data;
@@ -143,30 +145,28 @@ router.post("/add_mock_data", async (req, res) => {
         abstract,
         has_image,
         middle_image,
-        //   media_id,
-        //   media_name,
         avatar_url,
-        media_info,
-        content,
-        user_info,
-        group_id_str,
+        has_video,
       } = contentData;
-      let tag = contentData.tag;
-      console.log("contentData", title, contentData.source_url);
 
+      // 不添加视频文章
+      if (has_video) {
+        continue;
+      }
+
+      let tag = contentData.tag;
+
+      console.log("type", type, tag);
+
+      // 查找当前文章是否存在
       const currentArticle = await articleModel.findOne({ title });
-      // if (currentArticle) continue;
-      // try {
+
       const { data: detailData } = await axios.get(
         `http://m.toutiao.com${contentData.source_url}info/`
       );
-      console.log("ddd", detailData);
+
       const detail = detailData?.data;
-      // } catch {
-      //   console.log("e");
-      //   continue;
-      // }
-      console.log("detai", detail);
+
       if (!detail) {
         continue;
       }
@@ -212,6 +212,7 @@ router.post("/add_mock_data", async (req, res) => {
       const userAct = await userModel.findOne({
         account: detail.media_id,
       });
+
       if (!userAct) {
         throw new Error("用户不存在");
       }
@@ -223,6 +224,9 @@ router.post("/add_mock_data", async (req, res) => {
         tag = tagList[Math.floor(Math.random() * tagList.length)];
       }
 
+      const dealContent = await picReChange(detail.content);
+
+      // 如果有这个文章，则更新
       if (currentArticle) {
         await articleModel.updateOne({
           tag,
@@ -242,7 +246,7 @@ router.post("/add_mock_data", async (req, res) => {
               avatar_url: detail.media_user.avatar_url,
               media_info: detail.media_user.user_auth_info?.auth_info,
             } || {},
-          content: detail.content,
+          content: dealContent,
           digg_id_list: [],
           like_id_list: [],
           read_count: 0,
@@ -268,7 +272,7 @@ router.post("/add_mock_data", async (req, res) => {
             avatar_url: detail.media_user.avatar_url,
             media_info: detail.media_user.user_auth_info?.auth_info,
           } || {},
-        content: detail.content,
+        content: dealContent,
         digg_id_list: [],
         like_id_list: [],
         read_count: 0,

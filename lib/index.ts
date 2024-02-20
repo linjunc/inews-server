@@ -28,10 +28,12 @@ import usersRoute from "./routes/users";
 import articleRoute from "./routes/article";
 import commentRoute from "./routes/comment";
 import mockRoute from "./routes/mock";
+import picRoute from "./routes/pic";
 
 usersRoute(app);
 articleRoute(app);
 commentRoute(app);
 mockRoute(app);
+picRoute(app);
 
 app.listen(port, () => console.log(`http://localhost:3001`));
