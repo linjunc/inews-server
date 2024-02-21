@@ -1,5 +1,7 @@
 import axios from "axios";
 import OSS from "ali-oss";
+import { randomUUID } from "crypto";
+import { url } from "inspector";
 
 export interface ITransferImage {
   /**
@@ -37,11 +39,10 @@ export const transferFile = async ({ content }: { content: any }) => {
       throw new Error("上传失败");
     }
 
-    console.log(res);
     // 返回图片地址
     return ossUrl;
   } catch (error) {
-    console.error(`Failed to transfer image`, error);
+    console.error(`Failed to transfer file`, error);
     return "";
   }
 };
@@ -56,6 +57,7 @@ export const transferImage = async ({
   fileName,
 }: ITransferImage & { url: string }) => {
   try {
+    if (!url) return url;
     const response = await axios.get(url, { responseType: "arraybuffer" });
 
     // 上传到图床
@@ -69,11 +71,49 @@ export const transferImage = async ({
       throw new Error("上传失败");
     }
 
-    console.log(res);
     // 返回图片地址
     return ossUrl;
   } catch (error) {
     console.error(`Failed to transfer image: ${url}`, error);
-    return "";
+    throw new Error(`Failed to transfer image: ${url}`);
+  }
+};
+
+/**
+ * 批量转存图片
+ * @param param0
+ * @returns
+ */
+export const transferImages = async ({ urls }: { urls: string[] }) => {
+  try {
+    const resp = [];
+    for (let i = 0; i < urls.length; i++) {
+      console.log("url", urls[i], urls);
+      const response = await axios.get(urls[i], {
+        responseType: "arraybuffer",
+      });
+      const id = randomUUID();
+      // 上传到图床
+      const { res, url: ossUrl } = await client.put(
+        `inews/${id}/image_${i}`,
+        response.data,
+        {
+          headers: {
+            "Content-Type": response.headers["content-type"],
+          },
+        }
+      );
+
+      if (res.status !== 200) {
+        throw new Error("上传失败");
+      }
+
+      resp.push(ossUrl);
+    }
+    // 返回图片地址
+    return resp;
+  } catch (error) {
+    console.error(`Failed to transfer images: `, error);
+    throw new Error(`Failed to transfer images`);
   }
 };

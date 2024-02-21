@@ -12,14 +12,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.transferImage = exports.transferFile = void 0;
+exports.transferImages = exports.transferImage = exports.transferFile = void 0;
 const axios_1 = __importDefault(require("axios"));
 const ali_oss_1 = __importDefault(require("ali-oss"));
+const crypto_1 = require("crypto");
 // 初始化OSS客户端。请将以下参数替换为您自己的配置信息。
 const client = new ali_oss_1.default({
     region: "oss-cn-beijing", // 示例：'oss-cn-hangzhou'，填写Bucket所在地域。
-    accessKeyId: "LTAI5tJdhGcHabG4wijekHbV", // 确保已设置环境变量OSS_ACCESS_KEY_ID。
-    accessKeySecret: "GEoWQGFCRPiV3EHHFbYGyXvPMcRD9W", // 确保已设置环境变量OSS_ACCESS_KEY_SECRET。
+    accessKeyId: process.env.OSS_ACCESS_KEY_ID || "", // 确保已设置环境变量OSS_ACCESS_KEY_ID。
+    accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET || "", // 确保已设置环境变量OSS_ACCESS_KEY_SECRET。
     bucket: "ljcimg", // 示例：'my-bucket-name'，填写存储空间名称。
 });
 // 文件存储
@@ -32,12 +33,11 @@ const transferFile = ({ content }) => __awaiter(void 0, void 0, void 0, function
         if (res.status !== 200) {
             throw new Error("上传失败");
         }
-        console.log(res);
         // 返回图片地址
         return ossUrl;
     }
     catch (error) {
-        console.error(`Failed to transfer image`, error);
+        console.error(`Failed to transfer file`, error);
         return "";
     }
 });
@@ -49,6 +49,8 @@ exports.transferFile = transferFile;
  */
 const transferImage = ({ url, fileName, }) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        if (!url)
+            return url;
         const response = yield axios_1.default.get(url, { responseType: "arraybuffer" });
         // 上传到图床
         const { res, url: ossUrl } = yield client.put(fileName, response.data, {
@@ -59,13 +61,46 @@ const transferImage = ({ url, fileName, }) => __awaiter(void 0, void 0, void 0, 
         if (res.status !== 200) {
             throw new Error("上传失败");
         }
-        console.log(res);
         // 返回图片地址
         return ossUrl;
     }
     catch (error) {
         console.error(`Failed to transfer image: ${url}`, error);
-        return "";
+        throw new Error(`Failed to transfer image: ${url}`);
     }
 });
 exports.transferImage = transferImage;
+/**
+ * 批量转存图片
+ * @param param0
+ * @returns
+ */
+const transferImages = ({ urls }) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const resp = [];
+        for (let i = 0; i < urls.length; i++) {
+            console.log("url", urls[i], urls);
+            const response = yield axios_1.default.get(urls[i], {
+                responseType: "arraybuffer",
+            });
+            const id = (0, crypto_1.randomUUID)();
+            // 上传到图床
+            const { res, url: ossUrl } = yield client.put(`inews/${id}/image_${i}`, response.data, {
+                headers: {
+                    "Content-Type": response.headers["content-type"],
+                },
+            });
+            if (res.status !== 200) {
+                throw new Error("上传失败");
+            }
+            resp.push(ossUrl);
+        }
+        // 返回图片地址
+        return resp;
+    }
+    catch (error) {
+        console.error(`Failed to transfer images: `, error);
+        throw new Error(`Failed to transfer images`);
+    }
+});
+exports.transferImages = transferImages;

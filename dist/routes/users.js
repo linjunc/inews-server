@@ -531,10 +531,10 @@ router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0,
         let is_follow = false;
         const myId = (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
         const myself = yield user_1.default.where({ _id: myId }).findOne();
-        if (!myself) {
-            throw new Error("未登陆");
-        }
-        if (myself.follow_media_id_list.includes(user_id)) {
+        // if (!myself) {
+        //   throw new Error("未登陆");
+        // }
+        if (myself && myself.follow_media_id_list.includes(user_id)) {
             is_follow = true;
         }
         res.send({

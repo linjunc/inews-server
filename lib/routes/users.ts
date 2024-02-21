@@ -616,11 +616,11 @@ router.get("/user_info", authenticateToken, async (req, res) => {
     const myId = req.user?.id;
     const myself = await userModel.where({ _id: myId }).findOne();
 
-    if (!myself) {
-      throw new Error("未登陆");
-    }
+    // if (!myself) {
+    //   throw new Error("未登陆");
+    // }
 
-    if (myself.follow_media_id_list.includes(user_id)) {
+    if (myself && myself.follow_media_id_list.includes(user_id)) {
       is_follow = true;
     }
 

@@ -1,9 +1,11 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import axios from "axios";
 
 import userModel from "../model/user";
 import articleModel from "../model/article";
 import { picReChange } from "../utils/picReChange";
+import { TAG_CONST } from "../utils/constant_tag_name";
+import { transferImage, transferImages } from "../services/transfer";
 
 const router = express.Router();
 
@@ -122,20 +124,6 @@ router.post("/add_mock_data", async (req, res) => {
       `https://m.toutiao.com/list/?tag=${type}&count=200&format=json_raw&as=A17538D54D106FF`
     );
 
-    const tagList = [
-      "news_society",
-      "news_entertainment",
-      "news_tech",
-      "news_military",
-      "news_sports",
-      "news_car",
-      "news_finance",
-      "news_world",
-      "news_fashion",
-      "news_history",
-      "news_air",
-    ];
-
     const data = response.data.data;
 
     for (let i = 0; i < data.length; i++) {
@@ -147,6 +135,8 @@ router.post("/add_mock_data", async (req, res) => {
         middle_image,
         avatar_url,
         has_video,
+        image_list,
+        large_image_url,
       } = contentData;
 
       // 不添加视频文章
@@ -187,9 +177,11 @@ router.post("/add_mock_data", async (req, res) => {
         const userInfo = {
           account: detail.media_id,
           password: detail.media_id,
-          introduction: "该用户暂无简介~",
+          introduction:
+            detail.media_user.user_auth_info?.auth_info || "该用户暂无简介~",
           avatar:
             avatar_url ||
+            detail.media_user.avatar_url ||
             "https://sf1-ttcdn-tos.pstatp.com/obj/larkcloud-file-storage/baas/qctm8y/8e91b81e17773e58_1638443073384.png",
           nickname: detail.source,
           digg_article_id_list: [],
@@ -220,11 +212,22 @@ router.post("/add_mock_data", async (req, res) => {
       const id = userAct._id;
 
       // 保护这个标签
-      if (!tagList.includes(tag)) {
-        tag = tagList[Math.floor(Math.random() * tagList.length)];
+      if (!TAG_CONST.includes(tag)) {
+        tag = TAG_CONST[Math.floor(Math.random() * TAG_CONST.length)];
       }
 
       const dealContent = await picReChange(detail.content);
+
+      const imageList = image_list || middle_image?.url_list || [];
+      const transformImageList = imageList.map((item: any) => item.url);
+      const newImageUrls = await transferImages({ urls: transformImageList });
+
+      const firstImage = large_image_url || middle_image?.url || "";
+
+      const newFirstImage = await transferImage({
+        url: firstImage,
+        fileName: `inews/${title}/image_0`,
+      });
 
       // 如果有这个文章，则更新
       if (currentArticle) {
@@ -236,8 +239,8 @@ router.post("/add_mock_data", async (req, res) => {
           comment_count: 0,
           like_count: detail.like_count,
           has_image: has_image || false,
-          image_url: middle_image?.url || "",
-          image_list: middle_image?.url_list || [],
+          image_url: newFirstImage || newImageUrls[0] || "",
+          image_list: newImageUrls,
           publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
           media_id: id || "",
           media_user:
@@ -262,8 +265,8 @@ router.post("/add_mock_data", async (req, res) => {
         comment_count: 0,
         like_count: detail.like_count,
         has_image: has_image || false,
-        image_url: middle_image?.url || "",
-        image_list: middle_image?.url_list || [],
+        image_url: newFirstImage || newImageUrls[0] || "",
+        image_list: newImageUrls,
         publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
         media_id: id || "",
         media_user:
