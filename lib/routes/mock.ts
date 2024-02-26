@@ -6,6 +6,8 @@ import articleModel from "../model/article";
 import { picReChange } from "../utils/picReChange";
 import { TAG_CONST } from "../utils/constant_tag_name";
 import { transferImage, transferImages } from "../services/transfer";
+import { getToken } from "../utils/token";
+import { getRecommendedArticle } from "../services/predict";
 
 const router = express.Router();
 
@@ -294,6 +296,24 @@ router.post("/add_mock_data", async (req, res) => {
       msg: e.message,
     });
   }
+});
+
+router.get("/test-predict", async (req, res) => {
+  const userToken = getToken(req);
+  console.log(userToken);
+  if (!userToken?.id) {
+    return res.send({
+      code: 402,
+      msg: "没有 token",
+    });
+  }
+  const article = await getRecommendedArticle(userToken.id);
+
+  console.log(article);
+  res.send({
+    code: 200,
+    data: article,
+  });
 });
 
 export default (app: express.Application) => {

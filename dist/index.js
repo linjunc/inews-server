@@ -16,7 +16,10 @@ app.use(express_1.default.json());
 app.use(body_parser_1.default.json());
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 //连接数据库
-mongoose_1.default.connect("mongodb://localhost:27017/news");
+mongoose_1.default.connect("mongodb://localhost:27017/news?authSource=admin", {
+    user: "root",
+    pass: "KQgmH1MHLf0npkyt",
+});
 //监听数据库连接状态
 mongoose_1.default.connection.once("open", () => {
     console.log("数据库连接成功……");

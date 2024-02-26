@@ -54,6 +54,7 @@ router.get(
           })
           .countDocuments();
       }
+
       if (!query || !query.length) {
         return res.send({
           msg: "没有更多此类新闻",
@@ -82,7 +83,7 @@ router.get(
       }
 
       if (article_list.length == 0) {
-        res.send({
+        return res.send({
           msg: "没有更多此类新闻",
           has_more: false,
           code: 204,
