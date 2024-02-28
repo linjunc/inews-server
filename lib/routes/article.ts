@@ -6,6 +6,7 @@ import authenticateToken from "../utils/auth";
 import userModel from "../model/user";
 import articleModel from "../model/article";
 import { getToken } from "../utils/token";
+import { getRecommendedArticle } from "../services/predict";
 
 const router = express.Router();
 
@@ -36,8 +37,15 @@ router.get(
 
       const { nameMap } = await map();
       const { projection } = await getProjection();
+      const userToken = getToken(req as any);
 
-      if (tag == "recommend" || tag == "hot") {
+      if (tag === "recommend" && userToken?.id) {
+        const recommendTag = await getRecommendedArticle(userToken?.id);
+        query = await articleModel
+          .find({ tag: recommendTag[0].label }, projection)
+          .skip(skipNum)
+          .limit(currentNum);
+      } else if (tag == "hot" || tag == "recommend") {
         query = await articleModel
           .find({}, projection)
           .sort({ [tag === "hot" ? "read_count" : "like_count"]: -1 })

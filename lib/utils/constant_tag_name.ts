@@ -10,7 +10,7 @@ export const TAG_CONST = [
   "news_fashion",
   "news_history",
   "news_air",
-];
+] as const;
 
 const TAG_NAME_CONST = [
   "社会类",

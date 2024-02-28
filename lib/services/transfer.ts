@@ -29,7 +29,6 @@ const client = new OSS({
 // 文件存储
 export const transferFile = async ({ content }: { content: any }) => {
   try {
-    console.log("content", content);
     const objectKey = `/avatar/${Date.now()}-${content?.originalname}`;
 
     // 上传到图床
@@ -88,7 +87,6 @@ export const transferImages = async ({ urls }: { urls: string[] }) => {
   try {
     const resp = [];
     for (let i = 0; i < urls.length; i++) {
-      console.log("url", urls[i], urls);
       const response = await axios.get(urls[i], {
         responseType: "arraybuffer",
       });

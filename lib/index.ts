@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import cors from "cors";
+import schedule from "node-schedule";
 import "dotenv/config";
 
 const app = express();
@@ -32,11 +33,20 @@ import articleRoute from "./routes/article";
 import commentRoute from "./routes/comment";
 import mockRoute from "./routes/mock";
 import picRoute from "./routes/pic";
+import { crawler } from "./services/crawler";
+import { TAG_CONST } from "./utils/constant_tag_name";
 
 usersRoute(app);
 articleRoute(app);
 commentRoute(app);
 mockRoute(app);
 picRoute(app);
+
+// schedule.scheduleJob("* * * * *", async () => {
+//   console.log("定时任务执行");
+//   for (let i = 0; i < TAG_CONST.length; i++) {
+//     await crawler(TAG_CONST[i]);
+//   }
+// });
 
 app.listen(port, () => console.log(`http://localhost:3001`));
