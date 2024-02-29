@@ -46,6 +46,11 @@ const handleComment = async (articleId: string, itemId: string) => {
       }
     }
   }
+
+  const a = await articleModel.updateOne(
+    { _id: articleId },
+    { $set: { comment_count: articleComment.length } }
+  );
 };
 
 export const crawler = async (type: (typeof TAG_CONST)[number]) => {
@@ -162,41 +167,12 @@ export const crawler = async (type: (typeof TAG_CONST)[number]) => {
       fileName: `inews/${title}/image_0`,
     });
 
-    // 如果有这个文章，则更新
-    if (currentArticle) {
-      await articleModel.updateOne({
-        tag,
-        title,
-        abstract,
-        digg_count: detail.digg_count,
-        comment_count: 0,
-        like_count: detail.like_count,
-        has_image: has_image || false,
-        image_url: newFirstImage || newImageUrls[0] || "",
-        image_list: newImageUrls,
-        publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
-        media_id: id || "",
-        media_user:
-          {
-            media_name: detail.media_user.screen_name,
-            avatar_url: detail.media_user.avatar_url,
-            media_info: detail.media_user.user_auth_info?.auth_info,
-          } || {},
-        content: dealContent,
-        digg_id_list: [],
-        like_id_list: [],
-        read_count: 0,
-      });
-      continue;
-    }
-
-    // 处理完文章信息后，写入文章表
-    const newArticle = await articleModel.create({
+    const articleDb = {
       tag,
       title,
       abstract,
       digg_count: detail.digg_count,
-      comment_count: 0,
+      comment_count: detail.comment_count,
       like_count: detail.like_count,
       has_image: has_image || false,
       image_url: newFirstImage || newImageUrls[0] || "",
@@ -213,7 +189,17 @@ export const crawler = async (type: (typeof TAG_CONST)[number]) => {
       digg_id_list: [],
       like_id_list: [],
       read_count: 0,
-    });
+    };
+
+    // 如果有这个文章，则更新
+    if (currentArticle) {
+      await articleModel.updateOne(articleDb);
+      await handleComment(currentArticle.id, detail.gid);
+      continue;
+    }
+
+    // 处理完文章信息后，写入文章表
+    const newArticle = await articleModel.create(articleDb);
     console.log("!!!!");
     // 处理评论
     await handleComment(newArticle.id, detail.gid);
