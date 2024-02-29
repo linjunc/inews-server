@@ -543,8 +543,292 @@ router.get("/article_list_like", async (req, res) => {
   }
 });
 
+router.get("/follower", async (req, res) => {
+  try {
+    let { user_id, n, skip } = req.query;
+    const currentNum = Number(n);
+    const skipNum = Number(skip);
+    if (currentNum <= 0 || skipNum < 0 || !user_id) {
+      throw new Error("Params Error");
+    }
+
+    let has_more = true;
+
+    const user = await userModel.findOne(
+      { _id: user_id },
+      {
+        follower_id_list: 1,
+      }
+    );
+
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+    const userFollowers = user.follower_id_list;
+    const follower_list = [];
+
+    for (
+      let i = skipNum;
+      i < userFollowers.length && i < skipNum + currentNum;
+      i++
+    ) {
+      const res = await userModel.findOne({ _id: userFollowers[i] });
+      if (res) {
+        follower_list.push(res);
+      }
+    }
+
+    if (!follower_list.length) {
+      return res.send({
+        msg: "没有更多关注者",
+        has_more: false,
+        code: 204,
+      });
+    } else if (currentNum + skipNum >= userFollowers.length) {
+      has_more = false;
+    }
+
+    res.send({
+      msg: "获取关注者列表成功",
+      has_more,
+      follower_list,
+      code: 200,
+    });
+  } catch (e: any) {
+    res.send({
+      code: e.message == "jwt expired" ? 401 : 402,
+      msg: e.message,
+    });
+  }
+});
+
+router.get("/follow_list", async (req, res) => {
+  try {
+    let { user_id, n, skip } = req.query;
+    const currentNum = Number(n);
+    const skipNum = Number(skip);
+    if (currentNum <= 0 || skipNum < 0 || !user_id) {
+      throw new Error("Params Error");
+    }
+
+    let has_more = true;
+
+    const user = await userModel.findOne(
+      { _id: user_id },
+      {
+        follow_media_id_list: 1,
+      }
+    );
+
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+    const userFollowers = user.follow_media_id_list;
+    const follow_list = [];
+
+    for (
+      let i = skipNum;
+      i < userFollowers.length && i < skipNum + currentNum;
+      i++
+    ) {
+      const res = await userModel.findOne({ _id: userFollowers[i] });
+      if (res) {
+        follow_list.push(
+          Object.assign({}, (res as any)._doc, {
+            user_id: res._id,
+          })
+        );
+      }
+    }
+
+    if (!follow_list.length) {
+      return res.send({
+        msg: "没有更多关注的用户",
+        has_more: false,
+        code: 204,
+      });
+    } else if (currentNum + skipNum >= userFollowers.length) {
+      has_more = false;
+    }
+
+    res.send({
+      msg: "获取关注的用户列表成功",
+      has_more,
+      follow_list,
+      code: 200,
+    });
+  } catch (e: any) {
+    res.send({
+      code: e.message == "jwt expired" ? 401 : 402,
+      msg: e.message,
+    });
+  }
+});
+
+router.get("/tag_list", async (req, res) => {
+  try {
+    let { user_id, n, skip } = req.query;
+    const currentNum = Number(n);
+    const skipNum = Number(skip);
+    if (currentNum <= 0 || skipNum < 0 || !user_id) {
+      throw new Error("Params Error");
+    }
+
+    let has_more = true;
+
+    const user = await userModel.findOne(
+      { _id: user_id },
+      {
+        tag_list: 1,
+      }
+    );
+
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+    const tagList = user.tag_list;
+    const tag_list = [];
+
+    const { nameMap } = await map();
+
+    for (let i = skipNum; i < tagList.length && i < skipNum + currentNum; i++) {
+      const nameCN = nameMap.get(tagList[i]);
+      tag_list.push({
+        name: nameCN.substr(0, nameCN.length - 1),
+        tag: tagList[i],
+        is_follow: true,
+      });
+    }
+
+    if (!tag_list.length) {
+      return res.send({
+        msg: "没有更多关注的用户",
+        has_more: false,
+        code: 204,
+      });
+    } else if (currentNum + skipNum >= tagList.length) {
+      has_more = false;
+    }
+
+    res.send({
+      msg: "获取关注的用户列表成功",
+      has_more,
+      tag_list,
+      code: 200,
+    });
+  } catch (e: any) {
+    res.send({
+      code: e.message == "jwt expired" ? 401 : 402,
+      msg: e.message,
+    });
+  }
+});
+
+router.get("/tag_list_all", async (req, res) => {
+  try {
+    const { nameMap } = await map();
+
+    let { user_id } = req.query;
+
+    const user = await userModel.findOne(
+      { _id: user_id },
+      {
+        tag_list: 1,
+      }
+    );
+
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+
+    const followTagList = user.tag_list;
+
+    const tag_list = [];
+    for (const key of nameMap.keys()) {
+      const nameCN = nameMap.get(key);
+      tag_list.push({
+        name: nameCN.substr(0, nameCN.length - 1),
+        tag: key,
+        is_follow: followTagList.includes(key),
+      });
+    }
+    res.send({
+      code: 200,
+      tag_list,
+    });
+  } catch (e: any) {
+    res.send({
+      code: e.message == "jwt expired" ? 401 : 402,
+      msg: e.message,
+    });
+  }
+});
 // 需要鉴权的接口
 // router.use(authenticateToken);
+
+router.put("/follow_media", authenticateToken, async (req, res) => {
+  try {
+    const { media_id } = req.body;
+    if (!media_id) {
+      throw new Error("Params Error");
+    }
+
+    const user = await userModel.findOne(
+      { _id: req.user?.id },
+      {
+        follow_media_id_list: 1,
+      }
+    );
+
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+
+    const followMedia = user.follow_media_id_list;
+    console.log(followMedia, user);
+    if (followMedia.includes(media_id)) {
+      await userModel.updateOne(
+        { _id: req.user?.id },
+        { $pull: { follow_media_id_list: media_id } }
+      );
+
+      await userModel.updateOne(
+        {
+          _id: media_id,
+        },
+        {
+          $pull: { follower_id_list: req.user?.id },
+        }
+      );
+
+      return res.send({
+        code: 200,
+        msg: "取消关注成功",
+      });
+    } else {
+      await userModel.updateOne(
+        { _id: req.user?.id },
+        { $push: { follow_media_id_list: media_id } }
+      );
+
+      await userModel.updateOne(
+        {
+          _id: media_id,
+        },
+        { $push: { follower_id_list: req.user?.id } }
+      );
+      res.send({
+        code: 200,
+        msg: "关注成功",
+      });
+    }
+  } catch (e: any) {
+    res.send({
+      code: e.message == "jwt expired" ? 401 : 402,
+      msg: e.message,
+    });
+  }
+});
 
 // 修改是否展示浏览历史成功
 router.put("/set_show_history", authenticateToken, async (req, res) => {

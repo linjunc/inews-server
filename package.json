@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.23.0",
     "@tensorflow/tfjs-node": "^4.17.0",
     "@types/ali-oss": "^6.16.11",
     "ali-oss": "^6.20.0",

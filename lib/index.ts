@@ -33,6 +33,7 @@ import articleRoute from "./routes/article";
 import commentRoute from "./routes/comment";
 import mockRoute from "./routes/mock";
 import picRoute from "./routes/pic";
+import feedbackRouter from "./routes/feedback";
 import { crawler } from "./services/crawler";
 import { TAG_CONST } from "./utils/constant_tag_name";
 
@@ -41,6 +42,7 @@ articleRoute(app);
 commentRoute(app);
 mockRoute(app);
 picRoute(app);
+feedbackRouter(app);
 
 // schedule.scheduleJob("* * * * *", async () => {
 //   console.log("定时任务执行");
