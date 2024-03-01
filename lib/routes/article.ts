@@ -410,7 +410,7 @@ router.get("/article_list_user", async (req, res) => {
   }
 });
 // 搜索
-router.put("/article_search", async (req, res) => {
+router.get("/article_search", async (req, res) => {
   try {
     let { search, n, skip } = req.query;
     const currentNum = Number(n);

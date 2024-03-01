@@ -34,6 +34,7 @@ import commentRoute from "./routes/comment";
 import mockRoute from "./routes/mock";
 import picRoute from "./routes/pic";
 import feedbackRouter from "./routes/feedback";
+import searchRouter from "./routes/search";
 import { crawler } from "./services/crawler";
 import { TAG_CONST } from "./utils/constant_tag_name";
 
@@ -43,6 +44,7 @@ commentRoute(app);
 mockRoute(app);
 picRoute(app);
 feedbackRouter(app);
+searchRouter(app);
 
 // schedule.scheduleJob("* * * * *", async () => {
 //   console.log("定时任务执行");
