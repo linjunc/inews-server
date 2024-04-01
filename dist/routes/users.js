@@ -464,17 +464,240 @@ router.get("/article_list_like", (req, res) => __awaiter(void 0, void 0, void 0,
         });
     }
 }));
+router.get("/follower", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let { user_id, n, skip } = req.query;
+        const currentNum = Number(n);
+        const skipNum = Number(skip);
+        if (currentNum <= 0 || skipNum < 0 || !user_id) {
+            throw new Error("Params Error");
+        }
+        let has_more = true;
+        const user = yield user_1.default.findOne({ _id: user_id }, {
+            follower_id_list: 1,
+        });
+        if (!user) {
+            throw new Error("用户不存在");
+        }
+        const userFollowers = user.follower_id_list;
+        const follower_list = [];
+        for (let i = skipNum; i < userFollowers.length && i < skipNum + currentNum; i++) {
+            const res = yield user_1.default.findOne({ _id: userFollowers[i] });
+            if (res) {
+                follower_list.push(res);
+            }
+        }
+        if (!follower_list.length) {
+            return res.send({
+                msg: "没有更多关注者",
+                has_more: false,
+                code: 204,
+            });
+        }
+        else if (currentNum + skipNum >= userFollowers.length) {
+            has_more = false;
+        }
+        res.send({
+            msg: "获取关注者列表成功",
+            has_more,
+            follower_list,
+            code: 200,
+        });
+    }
+    catch (e) {
+        res.send({
+            code: e.message == "jwt expired" ? 401 : 402,
+            msg: e.message,
+        });
+    }
+}));
+router.get("/follow_list", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let { user_id, n, skip } = req.query;
+        const currentNum = Number(n);
+        const skipNum = Number(skip);
+        if (currentNum <= 0 || skipNum < 0 || !user_id) {
+            throw new Error("Params Error");
+        }
+        let has_more = true;
+        const user = yield user_1.default.findOne({ _id: user_id }, {
+            follow_media_id_list: 1,
+        });
+        if (!user) {
+            throw new Error("用户不存在");
+        }
+        const userFollowers = user.follow_media_id_list;
+        const follow_list = [];
+        for (let i = skipNum; i < userFollowers.length && i < skipNum + currentNum; i++) {
+            const res = yield user_1.default.findOne({ _id: userFollowers[i] });
+            if (res) {
+                follow_list.push(Object.assign({}, res._doc, {
+                    user_id: res._id,
+                }));
+            }
+        }
+        if (!follow_list.length) {
+            return res.send({
+                msg: "没有更多关注的用户",
+                has_more: false,
+                code: 204,
+            });
+        }
+        else if (currentNum + skipNum >= userFollowers.length) {
+            has_more = false;
+        }
+        res.send({
+            msg: "获取关注的用户列表成功",
+            has_more,
+            follow_list,
+            code: 200,
+        });
+    }
+    catch (e) {
+        res.send({
+            code: e.message == "jwt expired" ? 401 : 402,
+            msg: e.message,
+        });
+    }
+}));
+router.get("/tag_list", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let { user_id, n, skip } = req.query;
+        const currentNum = Number(n);
+        const skipNum = Number(skip);
+        if (currentNum <= 0 || skipNum < 0 || !user_id) {
+            throw new Error("Params Error");
+        }
+        let has_more = true;
+        const user = yield user_1.default.findOne({ _id: user_id }, {
+            tag_list: 1,
+        });
+        if (!user) {
+            throw new Error("用户不存在");
+        }
+        const tagList = user.tag_list;
+        const tag_list = [];
+        const { nameMap } = yield (0, constant_tag_name_1.default)();
+        for (let i = skipNum; i < tagList.length && i < skipNum + currentNum; i++) {
+            const nameCN = nameMap.get(tagList[i]);
+            tag_list.push({
+                name: nameCN.substr(0, nameCN.length - 1),
+                tag: tagList[i],
+                is_follow: true,
+            });
+        }
+        if (!tag_list.length) {
+            return res.send({
+                msg: "没有更多关注的用户",
+                has_more: false,
+                code: 204,
+            });
+        }
+        else if (currentNum + skipNum >= tagList.length) {
+            has_more = false;
+        }
+        res.send({
+            msg: "获取关注的用户列表成功",
+            has_more,
+            tag_list,
+            code: 200,
+        });
+    }
+    catch (e) {
+        res.send({
+            code: e.message == "jwt expired" ? 401 : 402,
+            msg: e.message,
+        });
+    }
+}));
+router.get("/tag_list_all", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { nameMap } = yield (0, constant_tag_name_1.default)();
+        let { user_id } = req.query;
+        const user = yield user_1.default.findOne({ _id: user_id }, {
+            tag_list: 1,
+        });
+        if (!user) {
+            throw new Error("用户不存在");
+        }
+        const followTagList = user.tag_list;
+        const tag_list = [];
+        for (const key of nameMap.keys()) {
+            const nameCN = nameMap.get(key);
+            tag_list.push({
+                name: nameCN.substr(0, nameCN.length - 1),
+                tag: key,
+                is_follow: followTagList.includes(key),
+            });
+        }
+        res.send({
+            code: 200,
+            tag_list,
+        });
+    }
+    catch (e) {
+        res.send({
+            code: e.message == "jwt expired" ? 401 : 402,
+            msg: e.message,
+        });
+    }
+}));
 // 需要鉴权的接口
 // router.use(authenticateToken);
+router.put("/follow_media", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d, _e;
+    try {
+        const { media_id } = req.body;
+        if (!media_id) {
+            throw new Error("Params Error");
+        }
+        const user = yield user_1.default.findOne({ _id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id }, {
+            follow_media_id_list: 1,
+        });
+        if (!user) {
+            throw new Error("用户不存在");
+        }
+        const followMedia = user.follow_media_id_list;
+        console.log(followMedia, user);
+        if (followMedia.includes(media_id)) {
+            yield user_1.default.updateOne({ _id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id }, { $pull: { follow_media_id_list: media_id } });
+            yield user_1.default.updateOne({
+                _id: media_id,
+            }, {
+                $pull: { follower_id_list: (_c = req.user) === null || _c === void 0 ? void 0 : _c.id },
+            });
+            return res.send({
+                code: 200,
+                msg: "取消关注成功",
+            });
+        }
+        else {
+            yield user_1.default.updateOne({ _id: (_d = req.user) === null || _d === void 0 ? void 0 : _d.id }, { $push: { follow_media_id_list: media_id } });
+            yield user_1.default.updateOne({
+                _id: media_id,
+            }, { $push: { follower_id_list: (_e = req.user) === null || _e === void 0 ? void 0 : _e.id } });
+            res.send({
+                code: 200,
+                msg: "关注成功",
+            });
+        }
+    }
+    catch (e) {
+        res.send({
+            code: e.message == "jwt expired" ? 401 : 402,
+            msg: e.message,
+        });
+    }
+}));
 // 修改是否展示浏览历史成功
 router.put("/set_show_history", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _f;
     try {
         const { is_show_history } = req.body;
         if (typeof is_show_history != "boolean") {
             throw new Error("Params Error");
         }
-        yield user_1.default.updateOne({ _id: (_a = req.user) === null || _a === void 0 ? void 0 : _a.id }, { is_show_history });
+        yield user_1.default.updateOne({ _id: (_f = req.user) === null || _f === void 0 ? void 0 : _f.id }, { is_show_history });
         // const user = await userModel.findOne({ _id: req.user?.id });
         res.send({
             msg: "修改是否展示浏览历史成功",
@@ -491,13 +714,13 @@ router.put("/set_show_history", auth_1.default, (req, res) => __awaiter(void 0, 
 }));
 // 修改个人成功
 router.put("/set_user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
+    var _g;
     try {
         const info = req.body;
         if (!info.introduction || !info.nickname || !info.personal_page) {
             throw new Error("Params Error");
         }
-        yield user_1.default.updateOne({ _id: (_b = req.user) === null || _b === void 0 ? void 0 : _b.id }, info);
+        yield user_1.default.updateOne({ _id: (_g = req.user) === null || _g === void 0 ? void 0 : _g.id }, info);
         // const user = await userModel.findOne({ _id: req.user?.id });
         res.send({
             msg: "修改信息成功",
@@ -518,7 +741,7 @@ router.put("/set_user_info", auth_1.default, (req, res) => __awaiter(void 0, voi
 }));
 // 获取用户信息
 router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
+    var _h;
     try {
         const { user_id } = req.query;
         if (!user_id) {
@@ -529,7 +752,7 @@ router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0,
             throw new Error("用户不存在");
         }
         let is_follow = false;
-        const myId = (_c = req.user) === null || _c === void 0 ? void 0 : _c.id;
+        const myId = (_h = req.user) === null || _h === void 0 ? void 0 : _h.id;
         const myself = yield user_1.default.where({ _id: myId }).findOne();
         // if (!myself) {
         //   throw new Error("未登陆");
@@ -579,14 +802,14 @@ router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0,
 }));
 // 设置关注标签
 router.put("/set_tag_list", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
+    var _j;
     try {
         // avatar 为头像url
         const { tag_list } = req.body;
         if (!tag_list || !tag_list.length) {
             throw new Error("Params Error");
         }
-        yield user_1.default.updateOne({ _id: (_d = req.user) === null || _d === void 0 ? void 0 : _d.id }, { tag_list });
+        yield user_1.default.updateOne({ _id: (_j = req.user) === null || _j === void 0 ? void 0 : _j.id }, { tag_list });
         // console.log("tagLis", tag_list);
         res.send({
             msg: "关注成功",
@@ -603,14 +826,14 @@ router.put("/set_tag_list", auth_1.default, (req, res) => __awaiter(void 0, void
 }));
 // 更新头像
 router.put("/avatar_upload", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
+    var _k;
     try {
         // avatar 为头像url
         const { avatar } = req.body;
         if (!avatar || typeof avatar != "string") {
             throw new Error("Params Error");
         }
-        yield user_1.default.updateOne({ _id: (_e = req.user) === null || _e === void 0 ? void 0 : _e.id }, { avatar });
+        yield user_1.default.updateOne({ _id: (_k = req.user) === null || _k === void 0 ? void 0 : _k.id }, { avatar });
         res.send({
             msg: "上传头像成功",
             avatar_url: avatar,
@@ -626,7 +849,7 @@ router.put("/avatar_upload", auth_1.default, (req, res) => __awaiter(void 0, voi
 }));
 // 获取用户阅读时间
 router.put("/read_time", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _f, _g;
+    var _l, _m;
     try {
         const { tag, read_time } = req.body;
         if (!tag || !read_time) {
@@ -637,7 +860,7 @@ router.put("/read_time", auth_1.default, (req, res) => __awaiter(void 0, void 0,
         }
         const minute = yield (0, util_sToMinute_1.default)({ s: read_time });
         const user = yield user_1.default.findOne({
-            _id: (_f = req.user) === null || _f === void 0 ? void 0 : _f.id,
+            _id: (_l = req.user) === null || _l === void 0 ? void 0 : _l.id,
         }, {
             read_report_list: 1,
         });
@@ -677,7 +900,7 @@ router.put("/read_time", auth_1.default, (req, res) => __awaiter(void 0, void 0,
         }
         user.read_report_list[dateIndex].total_count += minute;
         yield user_1.default.updateOne({
-            _id: (_g = req.user) === null || _g === void 0 ? void 0 : _g.id,
+            _id: (_m = req.user) === null || _m === void 0 ? void 0 : _m.id,
         }, user);
         res.send({
             msg: "设置阅读时间成功",

@@ -83,7 +83,13 @@ export const transferImage = async ({
  * @param param0
  * @returns
  */
-export const transferImages = async ({ urls }: { urls: string[] }) => {
+export const transferImages = async ({
+  urls,
+  fileName = "",
+}: {
+  urls: string[];
+  fileName: string;
+}) => {
   try {
     const resp = [];
     for (let i = 0; i < urls.length; i++) {
@@ -93,7 +99,7 @@ export const transferImages = async ({ urls }: { urls: string[] }) => {
       const id = randomUUID();
       // 上传到图床
       const { res, url: ossUrl } = await client.put(
-        `inews/${id}/image_${i}`,
+        `inews-${fileName}/${id}/image_${i}`,
         response.data,
         {
           headers: {

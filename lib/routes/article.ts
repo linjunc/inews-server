@@ -41,10 +41,18 @@ router.get(
 
       if (tag === "recommend" && userToken?.id) {
         const recommendTag = await getRecommendedArticle(userToken?.id);
-        query = await articleModel
-          .find({ tag: recommendTag[0].label }, projection)
-          .skip(skipNum)
-          .limit(currentNum);
+        if (recommendTag[0].label) {
+          query = await articleModel
+            .find({ tag: recommendTag[0].label }, projection)
+            .skip(skipNum)
+            .limit(currentNum);
+        } else {
+          query = await articleModel
+            .find({}, projection)
+            .sort({ ["read_count"]: -1 })
+            .skip(skipNum)
+            .limit(currentNum);
+        }
       } else if (tag == "hot" || tag == "recommend") {
         query = await articleModel
           .find({}, projection)

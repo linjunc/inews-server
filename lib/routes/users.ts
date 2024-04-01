@@ -9,6 +9,7 @@ import sToMinute from "../utils/util_sToMinute";
 
 import userModel from "../model/user";
 import articleModel from "../model/article";
+import { getToken } from "../utils/token";
 
 const router = express.Router();
 
@@ -882,7 +883,7 @@ router.put("/set_user_info", authenticateToken, async (req, res) => {
 });
 
 // 获取用户信息
-router.get("/user_info", authenticateToken, async (req, res) => {
+router.get("/user_info", async (req, res) => {
   try {
     const { user_id } = req.query;
     if (!user_id) {
@@ -897,7 +898,9 @@ router.get("/user_info", authenticateToken, async (req, res) => {
 
     let is_follow = false;
 
-    const myId = req.user?.id;
+    const userToken = getToken(req);
+
+    const myId = userToken?.id;
     const myself = await userModel.where({ _id: myId }).findOne();
 
     // if (!myself) {

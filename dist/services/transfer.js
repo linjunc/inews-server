@@ -26,7 +26,6 @@ const client = new ali_oss_1.default({
 // 文件存储
 const transferFile = ({ content }) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log("content", content);
         const objectKey = `/avatar/${Date.now()}-${content === null || content === void 0 ? void 0 : content.originalname}`;
         // 上传到图床
         const { res, url: ossUrl } = yield client.put(objectKey, content.buffer);
@@ -75,17 +74,16 @@ exports.transferImage = transferImage;
  * @param param0
  * @returns
  */
-const transferImages = ({ urls }) => __awaiter(void 0, void 0, void 0, function* () {
+const transferImages = ({ urls, fileName = "", }) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const resp = [];
         for (let i = 0; i < urls.length; i++) {
-            console.log("url", urls[i], urls);
             const response = yield axios_1.default.get(urls[i], {
                 responseType: "arraybuffer",
             });
             const id = (0, crypto_1.randomUUID)();
             // 上传到图床
-            const { res, url: ossUrl } = yield client.put(`inews/${id}/image_${i}`, response.data, {
+            const { res, url: ossUrl } = yield client.put(`inews-${fileName}/${id}/image_${i}`, response.data, {
                 headers: {
                     "Content-Type": response.headers["content-type"],
                 },

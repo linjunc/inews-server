@@ -18,6 +18,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //连接数据库
 mongoose.connect("mongodb://localhost:27017/news");
 
+// mongoose.connect("mongodb://localhost:27017/news?authSource=admin", {
+//   user: "root",
+//   pass: "KQgmH1MHLf0npkyt",
+// });
+
 // mongoose.set("strictQuery", false);
 
 //监听数据库连接状态
@@ -46,7 +51,7 @@ picRoute(app);
 feedbackRouter(app);
 searchRouter(app);
 
-// schedule.scheduleJob("* * * * *", async () => {
+// schedule.scheduleJob("0 */12 * * *", async () => {
 //   console.log("定时任务执行");
 //   for (let i = 0; i < TAG_CONST.length; i++) {
 //     await crawler(TAG_CONST[i]);

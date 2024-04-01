@@ -28,7 +28,7 @@ export const picReChange = async (
   const promises = allImg.map((url, index) =>
     transferImage({
       url,
-      fileName: `inews/${id}/image_${index}`,
+      fileName: `inews-detail/${id}/image_${index}`,
     })
   );
 

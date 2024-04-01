@@ -19,6 +19,7 @@ const auth_1 = __importDefault(require("../utils/auth"));
 const user_1 = __importDefault(require("../model/user"));
 const article_1 = __importDefault(require("../model/article"));
 const token_1 = require("../utils/token");
+const predict_1 = require("../services/predict");
 const router = express_1.default.Router();
 // 查询文章列表
 router.get("/article_list", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -35,7 +36,15 @@ router.get("/article_list", (req, res) => __awaiter(void 0, void 0, void 0, func
         let has_more = true;
         const { nameMap } = yield (0, constant_tag_name_1.default)();
         const { projection } = yield (0, constant_article_projection_1.default)();
-        if (tag == "recommend" || tag == "hot") {
+        const userToken = (0, token_1.getToken)(req);
+        if (tag === "recommend" && (userToken === null || userToken === void 0 ? void 0 : userToken.id)) {
+            const recommendTag = yield (0, predict_1.getRecommendedArticle)(userToken === null || userToken === void 0 ? void 0 : userToken.id);
+            query = yield article_1.default
+                .find({ tag: recommendTag[0].label }, projection)
+                .skip(skipNum)
+                .limit(currentNum);
+        }
+        else if (tag == "hot" || tag == "recommend") {
             query = yield article_1.default
                 .find({}, projection)
                 .sort({ [tag === "hot" ? "read_count" : "like_count"]: -1 })
@@ -75,7 +84,7 @@ router.get("/article_list", (req, res) => __awaiter(void 0, void 0, void 0, func
             }));
         }
         if (article_list.length == 0) {
-            res.send({
+            return res.send({
                 msg: "没有更多此类新闻",
                 has_more: false,
                 code: 204,
@@ -342,7 +351,7 @@ router.get("/article_list_user", (req, res) => __awaiter(void 0, void 0, void 0,
     }
 }));
 // 搜索
-router.put("/article_search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/article_search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let { search, n, skip } = req.query;
         const currentNum = Number(n);

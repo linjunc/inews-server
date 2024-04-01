@@ -13,12 +13,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const axios_1 = __importDefault(require("axios"));
 const user_1 = __importDefault(require("../model/user"));
 const article_1 = __importDefault(require("../model/article"));
-const picReChange_1 = require("../utils/picReChange");
-const constant_tag_name_1 = require("../utils/constant_tag_name");
-const transfer_1 = require("../services/transfer");
+const token_1 = require("../utils/token");
+const predict_1 = require("../services/predict");
+const crawler_1 = require("../services/crawler");
 const router = express_1.default.Router();
 // 添加文章
 // 写入文章表时，如果没有该用户，那么就为这个 id 创建一个帐号，密码为123，然后再写入文章表和用户表
@@ -102,130 +101,9 @@ router.post("/add_article_mock", (req, res) => __awaiter(void 0, void 0, void 0,
     }
 }));
 router.post("/add_mock_data", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
     const { type = "news_society" } = req.body;
     try {
-        const response = yield axios_1.default.get(`https://m.toutiao.com/list/?tag=${type}&count=200&format=json_raw&as=A17538D54D106FF`);
-        const data = response.data.data;
-        for (let i = 0; i < data.length; i++) {
-            const contentData = data[i];
-            const { title, abstract, has_image, middle_image, avatar_url, has_video, image_list, large_image_url, } = contentData;
-            // 不添加视频文章
-            if (has_video) {
-                continue;
-            }
-            let tag = contentData.tag;
-            console.log("type", type, tag);
-            // 查找当前文章是否存在
-            const currentArticle = yield article_1.default.findOne({ title });
-            const { data: detailData } = yield axios_1.default.get(`http://m.toutiao.com${contentData.source_url}info/`);
-            const detail = detailData === null || detailData === void 0 ? void 0 : detailData.data;
-            if (!detail) {
-                continue;
-            }
-            // 查找是否有当前作者
-            const media = yield user_1.default.findOne({
-                account: detail.media_id,
-            }, {
-                account: 1,
-                password: 1,
-            });
-            // 没有该用户则注册
-            if (!media || !media.account) {
-                const userInfo = {
-                    account: detail.media_id,
-                    password: detail.media_id,
-                    introduction: ((_a = detail.media_user.user_auth_info) === null || _a === void 0 ? void 0 : _a.auth_info) || "该用户暂无简介~",
-                    avatar: avatar_url ||
-                        detail.media_user.avatar_url ||
-                        "https://sf1-ttcdn-tos.pstatp.com/obj/larkcloud-file-storage/baas/qctm8y/8e91b81e17773e58_1638443073384.png",
-                    nickname: detail.source,
-                    digg_article_id_list: [],
-                    digg_comment_id_list: [],
-                    comment_id_list: [],
-                    reply_id_list: [],
-                    like_article_id_list: [],
-                    follow_media_id_list: [],
-                    history_id_list: [],
-                    follower_id_list: [],
-                    tag_list: [],
-                    type: "media",
-                    personal_page: `## <div align=\"center\">欢迎━(*｀∀´*)ノ亻!访问我的iNews主页</div>\n<div align=\"center\">\n\n ​🤵**目前职业**\n\n  ​👨**性别：你的性别**  &nbsp;&nbsp;&nbsp;  🚴‍♂️**爱好：你的爱好**\n\n  🏡​**Base：居住地点** &nbsp;🏢 ‍**公司 @公司名称**  \n\n😃 **今日状态：（元气满满/听歌/沉迷学习/摸鱼......）**\n</div>`,
-                    read_report_list: [],
-                    is_show_history: false,
-                };
-                yield user_1.default.create(userInfo);
-            }
-            const userAct = yield user_1.default.findOne({
-                account: detail.media_id,
-            });
-            if (!userAct) {
-                throw new Error("用户不存在");
-            }
-            const id = userAct._id;
-            // 保护这个标签
-            if (!constant_tag_name_1.TAG_CONST.includes(tag)) {
-                tag = constant_tag_name_1.TAG_CONST[Math.floor(Math.random() * constant_tag_name_1.TAG_CONST.length)];
-            }
-            const dealContent = yield (0, picReChange_1.picReChange)(detail.content);
-            const imageList = image_list || (middle_image === null || middle_image === void 0 ? void 0 : middle_image.url_list) || [];
-            const transformImageList = imageList.map((item) => item.url);
-            const newImageUrls = yield (0, transfer_1.transferImages)({ urls: transformImageList });
-            const firstImage = large_image_url || (middle_image === null || middle_image === void 0 ? void 0 : middle_image.url) || "";
-            const newFirstImage = yield (0, transfer_1.transferImage)({
-                url: firstImage,
-                fileName: `inews/${title}/image_0`,
-            });
-            // 如果有这个文章，则更新
-            if (currentArticle) {
-                yield article_1.default.updateOne({
-                    tag,
-                    title,
-                    abstract,
-                    digg_count: detail.digg_count,
-                    comment_count: 0,
-                    like_count: detail.like_count,
-                    has_image: has_image || false,
-                    image_url: newFirstImage || newImageUrls[0] || "",
-                    image_list: newImageUrls,
-                    publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
-                    media_id: id || "",
-                    media_user: {
-                        media_name: detail.media_user.screen_name,
-                        avatar_url: detail.media_user.avatar_url,
-                        media_info: (_b = detail.media_user.user_auth_info) === null || _b === void 0 ? void 0 : _b.auth_info,
-                    } || {},
-                    content: dealContent,
-                    digg_id_list: [],
-                    like_id_list: [],
-                    read_count: 0,
-                });
-                continue;
-            }
-            const newArticle = new article_1.default({
-                tag,
-                title,
-                abstract,
-                digg_count: detail.digg_count,
-                comment_count: 0,
-                like_count: detail.like_count,
-                has_image: has_image || false,
-                image_url: newFirstImage || newImageUrls[0] || "",
-                image_list: newImageUrls,
-                publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
-                media_id: id || "",
-                media_user: {
-                    media_name: detail.media_user.screen_name,
-                    avatar_url: detail.media_user.avatar_url,
-                    media_info: (_c = detail.media_user.user_auth_info) === null || _c === void 0 ? void 0 : _c.auth_info,
-                } || {},
-                content: dealContent,
-                digg_id_list: [],
-                like_id_list: [],
-                read_count: 0,
-            });
-            yield newArticle.save();
-        }
+        yield (0, crawler_1.crawler)(type);
         res.send({
             msg: "文章添加成功",
             code: 200,
@@ -237,6 +115,22 @@ router.post("/add_mock_data", (req, res) => __awaiter(void 0, void 0, void 0, fu
             msg: e.message,
         });
     }
+}));
+router.get("/test-predict", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userToken = (0, token_1.getToken)(req);
+    console.log(userToken);
+    if (!(userToken === null || userToken === void 0 ? void 0 : userToken.id)) {
+        return res.send({
+            code: 402,
+            msg: "没有 token",
+        });
+    }
+    const article = yield (0, predict_1.getRecommendedArticle)(userToken.id);
+    console.log(article);
+    res.send({
+        code: 200,
+        data: article,
+    });
 }));
 exports.default = (app) => {
     app.use("", router);

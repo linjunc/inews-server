@@ -28,11 +28,10 @@ const handleComment = async (articleId: string, itemId: string) => {
       text: comment.text,
       digg_count: comment.digg_count,
       digg_id_list: [],
-      user_id: "65d5737e97d6a16021b6bba5",
+      user_id: "65e540c2fb1b2651947f9dae",
       article_id: articleId,
     });
 
-    console.log("!!!!", comment.new_reply_list.length);
     // 为评论添加回复
     if (comment.new_reply_list.length) {
       for (let j = 0; j < comment.new_reply_list.length; j++) {
@@ -40,7 +39,7 @@ const handleComment = async (articleId: string, itemId: string) => {
         await replyModel.create({
           create_time: reply.create_time,
           text: reply.text,
-          user_id: "65d5737e97d6a16021b6bba5",
+          user_id: "65e540c2fb1b2651947f9dae",
           comment_id: commentMo.id,
         });
       }
@@ -54,154 +53,157 @@ const handleComment = async (articleId: string, itemId: string) => {
 };
 
 export const crawler = async (type: (typeof TAG_CONST)[number]) => {
-  const date = new Date();
-  const time = parseInt(String(date.getTime() / 1000));
-  const response = await axios.get(
-    `https://m.toutiao.com/list/?tag=${type}&count=200&format=json_raw&as=A12665FD9DCA600`
-  );
-
-  const data = response.data.data;
-  console.log("1111", data.length);
-  for (let i = 0; i < data.length; i++) {
-    const contentData = data[i];
-    console.log("aaa");
-    const {
-      title,
-      abstract,
-      has_image,
-      middle_image,
-      avatar_url,
-      has_video,
-      image_list,
-      large_image_url,
-    } = contentData;
-
-    // 不添加视频文章
-    if (has_video) {
-      continue;
-    }
-
-    let tag = contentData.tag;
-
-    // 查找当前文章是否存在
-    const currentArticle = await articleModel.findOne({ title });
-
-    const { data: detailData } = await axios.get(
-      `http://m.toutiao.com${contentData.source_url}info/`
+  try {
+    console.log("crawler", type);
+    const response = await axios.get(
+      `https://m.toutiao.com/list/?tag=${type}&count=200&format=json_raw&as=A12665FD9DCA600`
     );
 
-    const detail = detailData?.data;
+    const data = response.data.data;
+    for (let i = 0; i < data.length; i++) {
+      const contentData = data[i];
+      const {
+        title,
+        abstract,
+        has_image,
+        middle_image,
+        avatar_url,
+        has_video,
+        image_list,
+        large_image_url,
+      } = contentData;
 
-    if (!detail) {
-      continue;
-    }
-
-    // 查找是否有当前作者
-    const media = await userModel.findOne(
-      {
-        account: detail.media_id,
-      },
-      {
-        account: 1,
-        password: 1,
+      // 不添加视频文章
+      if (has_video) {
+        continue;
       }
-    );
 
-    // 没有该用户则注册
-    if (!media || !media.account) {
-      const userInfo = {
-        account: detail.media_id,
-        password: detail.media_id,
-        introduction:
-          detail.media_user.user_auth_info?.auth_info || "该用户暂无简介~",
-        avatar:
-          avatar_url ||
-          detail.media_user.avatar_url ||
-          "https://sf1-ttcdn-tos.pstatp.com/obj/larkcloud-file-storage/baas/qctm8y/8e91b81e17773e58_1638443073384.png",
-        nickname: detail.source,
-        digg_article_id_list: [],
-        digg_comment_id_list: [],
-        comment_id_list: [],
-        reply_id_list: [],
-        like_article_id_list: [],
-        follow_media_id_list: [],
-        history_id_list: [],
-        follower_id_list: [],
-        tag_list: [],
-        type: "media",
-        personal_page: `## <div align=\"center\">欢迎━(*｀∀´*)ノ亻!访问我的iNews主页</div>\n<div align=\"center\">\n\n ​🤵**目前职业**\n\n  ​👨**性别：你的性别**  &nbsp;&nbsp;&nbsp;  🚴‍♂️**爱好：你的爱好**\n\n  🏡​**Base：居住地点** &nbsp;🏢 ‍**公司 @公司名称**  \n\n😃 **今日状态：（元气满满/听歌/沉迷学习/摸鱼......）**\n</div>`,
-        read_report_list: [],
-        is_show_history: false,
-      };
-      await userModel.create(userInfo);
-    }
+      let tag = contentData.tag;
 
-    const userAct = await userModel.findOne({
-      account: detail.media_id,
-    });
+      // 查找当前文章是否存在
+      const currentArticle = await articleModel.findOne({ title });
 
-    if (!userAct) {
-      throw new Error("用户不存在");
-    }
+      const { data: detailData } = await axios.get(
+        `http://m.toutiao.com${contentData.source_url}info/`
+      );
 
-    const id = userAct._id;
+      const detail = detailData?.data;
 
-    // 保护这个标签
-    if (!TAG_CONST.includes(tag)) {
-      tag = TAG_CONST[Math.floor(Math.random() * TAG_CONST.length)];
-    }
+      if (!detail) {
+        continue;
+      }
 
-    const dealContent = await picReChange(
-      detail.content,
-      `${title}-${new Date()}-details`
-    );
-
-    const imageList = image_list || middle_image?.url_list || [];
-    const transformImageList = imageList.map((item: any) => item.url);
-    const newImageUrls = await transferImages({ urls: transformImageList });
-
-    const firstImage = large_image_url || middle_image?.url || "";
-
-    const newFirstImage = await transferImage({
-      url: firstImage,
-      fileName: `inews/${title}/image_0`,
-    });
-
-    const articleDb = {
-      tag,
-      title,
-      abstract,
-      digg_count: detail.digg_count,
-      comment_count: detail.comment_count,
-      like_count: detail.like_count,
-      has_image: has_image || false,
-      image_url: newFirstImage || newImageUrls[0] || "",
-      image_list: newImageUrls,
-      publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
-      media_id: id || "",
-      media_user:
+      // 查找是否有当前作者
+      const media = await userModel.findOne(
         {
-          media_name: detail.media_user.screen_name,
-          avatar_url: detail.media_user.avatar_url,
-          media_info: detail.media_user.user_auth_info?.auth_info,
-        } || {},
-      content: dealContent,
-      digg_id_list: [],
-      like_id_list: [],
-      read_count: 0,
-    };
+          account: detail.media_id,
+        },
+        {
+          account: 1,
+          password: 1,
+        }
+      );
 
-    // 如果有这个文章，则更新
-    if (currentArticle) {
-      await articleModel.updateOne(articleDb);
-      await handleComment(currentArticle.id, detail.gid);
-      continue;
+      // 没有该用户则注册
+      if (!media || !media.account) {
+        const userInfo = {
+          account: detail.media_id,
+          password: detail.media_id,
+          introduction:
+            detail.media_user.user_auth_info?.auth_info || "该用户暂无简介~",
+          avatar:
+            avatar_url ||
+            detail.media_user.avatar_url ||
+            "https://sf1-ttcdn-tos.pstatp.com/obj/larkcloud-file-storage/baas/qctm8y/8e91b81e17773e58_1638443073384.png",
+          nickname: detail.source,
+          digg_article_id_list: [],
+          digg_comment_id_list: [],
+          comment_id_list: [],
+          reply_id_list: [],
+          like_article_id_list: [],
+          follow_media_id_list: [],
+          history_id_list: [],
+          follower_id_list: [],
+          tag_list: [],
+          type: "media",
+          personal_page: `## <div align=\"center\">欢迎━(*｀∀´*)ノ亻!访问我的iNews主页</div>\n<div align=\"center\">\n\n ​🤵**目前职业**\n\n  ​👨**性别：你的性别**  &nbsp;&nbsp;&nbsp;  🚴‍♂️**爱好：你的爱好**\n\n  🏡​**Base：居住地点** &nbsp;🏢 ‍**公司 @公司名称**  \n\n😃 **今日状态：（元气满满/听歌/沉迷学习/摸鱼......）**\n</div>`,
+          read_report_list: [],
+          is_show_history: false,
+        };
+        await userModel.create(userInfo);
+      }
+
+      const userAct = await userModel.findOne({
+        account: detail.media_id,
+      });
+
+      if (!userAct) {
+        throw new Error("用户不存在");
+      }
+
+      const id = userAct._id;
+
+      // 保护这个标签
+      if (!TAG_CONST.includes(tag)) {
+        tag = TAG_CONST[Math.floor(Math.random() * TAG_CONST.length)];
+      }
+
+      const dealContent = await picReChange(
+        detail.content,
+        `${title}-${new Date()}-details`
+      );
+
+      const imageList = image_list || middle_image?.url_list || [];
+      const transformImageList = imageList.map((item: any) => item.url);
+      const newImageUrls = await transferImages({
+        urls: transformImageList,
+        fileName: "imageList",
+      });
+
+      const firstImage = large_image_url || middle_image?.url || "";
+
+      const newFirstImage = await transferImage({
+        url: firstImage,
+        fileName: `inews-header/${title}/image_0`,
+      });
+
+      const articleDb = {
+        tag,
+        title,
+        abstract,
+        digg_count: detail.digg_count,
+        comment_count: detail.comment_count,
+        like_count: detail.like_count,
+        has_image: has_image || false,
+        image_url: newFirstImage || newImageUrls[0] || "",
+        image_list: newImageUrls,
+        publish_time: detail.publish_time || Math.floor(Date.now() / 1000),
+        media_id: id || "",
+        media_user:
+          {
+            media_name: detail.media_user.screen_name,
+            avatar_url: detail.media_user.avatar_url,
+            media_info: detail.media_user.user_auth_info?.auth_info,
+          } || {},
+        content: dealContent,
+        digg_id_list: [],
+        like_id_list: [],
+        read_count: 0,
+      };
+
+      // 如果有这个文章，则更新
+      if (currentArticle) {
+        await articleModel.updateOne(articleDb);
+        await handleComment(currentArticle.id, detail.gid);
+        continue;
+      }
+
+      // 处理完文章信息后，写入文章表
+      const newArticle = await articleModel.create(articleDb);
+      // 处理评论
+      await handleComment(newArticle.id, detail.gid);
     }
-
-    // 处理完文章信息后，写入文章表
-    const newArticle = await articleModel.create(articleDb);
-    console.log("!!!!");
-    // 处理评论
-    await handleComment(newArticle.id, detail.gid);
+  } catch (err) {
+    console.log(err);
   }
 };

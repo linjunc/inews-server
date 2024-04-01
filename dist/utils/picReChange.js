@@ -36,7 +36,7 @@ const picReChange = (content, id = (0, crypto_1.randomUUID)()) => __awaiter(void
     // 转存所有的图片
     const promises = allImg.map((url, index) => (0, transfer_1.transferImage)({
         url,
-        fileName: `inews/${id}/image_${index}`,
+        fileName: `inews-detail/${id}/image_${index}`,
     }));
     // 等待所有图片转存完成
     const newImageUrls = (yield Promise.all(promises));
