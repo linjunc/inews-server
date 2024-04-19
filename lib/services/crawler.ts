@@ -80,6 +80,12 @@ export const crawler = async (type: (typeof TAG_CONST)[number]) => {
 
       let tag = contentData.tag;
 
+      // 保护这个标签
+      if (!TAG_CONST.includes(tag)) {
+        // tag = TAG_CONST[Math.floor(Math.random() * TAG_CONST.length)];
+        continue;
+      }
+
       // 查找当前文章是否存在
       const currentArticle = await articleModel.findOne({ title });
 
@@ -142,11 +148,6 @@ export const crawler = async (type: (typeof TAG_CONST)[number]) => {
       }
 
       const id = userAct._id;
-
-      // 保护这个标签
-      if (!TAG_CONST.includes(tag)) {
-        tag = TAG_CONST[Math.floor(Math.random() * TAG_CONST.length)];
-      }
 
       const dealContent = await picReChange(
         detail.content,
