@@ -21,6 +21,7 @@ const auth_1 = __importDefault(require("../utils/auth"));
 const util_sToMinute_1 = __importDefault(require("../utils/util_sToMinute"));
 const user_1 = __importDefault(require("../model/user"));
 const article_1 = __importDefault(require("../model/article"));
+const token_1 = require("../utils/token");
 const router = express_1.default.Router();
 router.post("/user_login", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -740,8 +741,7 @@ router.put("/set_user_info", auth_1.default, (req, res) => __awaiter(void 0, voi
     }
 }));
 // 获取用户信息
-router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h;
+router.get("/user_info", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { user_id } = req.query;
         if (!user_id) {
@@ -752,7 +752,8 @@ router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0,
             throw new Error("用户不存在");
         }
         let is_follow = false;
-        const myId = (_h = req.user) === null || _h === void 0 ? void 0 : _h.id;
+        const userToken = (0, token_1.getToken)(req);
+        const myId = userToken === null || userToken === void 0 ? void 0 : userToken.id;
         const myself = yield user_1.default.where({ _id: myId }).findOne();
         // if (!myself) {
         //   throw new Error("未登陆");
@@ -802,14 +803,14 @@ router.get("/user_info", auth_1.default, (req, res) => __awaiter(void 0, void 0,
 }));
 // 设置关注标签
 router.put("/set_tag_list", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j;
+    var _h;
     try {
         // avatar 为头像url
         const { tag_list } = req.body;
         if (!tag_list || !tag_list.length) {
             throw new Error("Params Error");
         }
-        yield user_1.default.updateOne({ _id: (_j = req.user) === null || _j === void 0 ? void 0 : _j.id }, { tag_list });
+        yield user_1.default.updateOne({ _id: (_h = req.user) === null || _h === void 0 ? void 0 : _h.id }, { tag_list });
         // console.log("tagLis", tag_list);
         res.send({
             msg: "关注成功",
@@ -826,14 +827,14 @@ router.put("/set_tag_list", auth_1.default, (req, res) => __awaiter(void 0, void
 }));
 // 更新头像
 router.put("/avatar_upload", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k;
+    var _j;
     try {
         // avatar 为头像url
         const { avatar } = req.body;
         if (!avatar || typeof avatar != "string") {
             throw new Error("Params Error");
         }
-        yield user_1.default.updateOne({ _id: (_k = req.user) === null || _k === void 0 ? void 0 : _k.id }, { avatar });
+        yield user_1.default.updateOne({ _id: (_j = req.user) === null || _j === void 0 ? void 0 : _j.id }, { avatar });
         res.send({
             msg: "上传头像成功",
             avatar_url: avatar,
@@ -849,7 +850,7 @@ router.put("/avatar_upload", auth_1.default, (req, res) => __awaiter(void 0, voi
 }));
 // 获取用户阅读时间
 router.put("/read_time", auth_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _l, _m;
+    var _k, _l;
     try {
         const { tag, read_time } = req.body;
         if (!tag || !read_time) {
@@ -860,7 +861,7 @@ router.put("/read_time", auth_1.default, (req, res) => __awaiter(void 0, void 0,
         }
         const minute = yield (0, util_sToMinute_1.default)({ s: read_time });
         const user = yield user_1.default.findOne({
-            _id: (_l = req.user) === null || _l === void 0 ? void 0 : _l.id,
+            _id: (_k = req.user) === null || _k === void 0 ? void 0 : _k.id,
         }, {
             read_report_list: 1,
         });
@@ -900,7 +901,7 @@ router.put("/read_time", auth_1.default, (req, res) => __awaiter(void 0, void 0,
         }
         user.read_report_list[dateIndex].total_count += minute;
         yield user_1.default.updateOne({
-            _id: (_m = req.user) === null || _m === void 0 ? void 0 : _m.id,
+            _id: (_l = req.user) === null || _l === void 0 ? void 0 : _l.id,
         }, user);
         res.send({
             msg: "设置阅读时间成功",

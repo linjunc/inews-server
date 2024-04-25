@@ -26,10 +26,11 @@ app.use(express_1.default.json());
 app.use(body_parser_1.default.json());
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 //连接数据库
-mongoose_1.default.connect("mongodb://localhost:27017/news?authSource=admin", {
-    user: "root",
-    pass: "KQgmH1MHLf0npkyt",
-});
+mongoose_1.default.connect("mongodb://localhost:27017/news");
+// mongoose.connect("mongodb://localhost:27017/news?authSource=admin", {
+//   user: "root",
+//   pass: "KQgmH1MHLf0npkyt",
+// });
 // mongoose.set("strictQuery", false);
 //监听数据库连接状态
 mongoose_1.default.connection.once("open", () => {
@@ -54,7 +55,7 @@ const constant_tag_name_1 = require("./utils/constant_tag_name");
 (0, pic_1.default)(app);
 (0, feedback_1.default)(app);
 (0, search_1.default)(app);
-node_schedule_1.default.scheduleJob("* * * * *", () => __awaiter(void 0, void 0, void 0, function* () {
+node_schedule_1.default.scheduleJob("0 */12 * * *", () => __awaiter(void 0, void 0, void 0, function* () {
     console.log("定时任务执行");
     for (let i = 0; i < constant_tag_name_1.TAG_CONST.length; i++) {
         yield (0, crawler_1.crawler)(constant_tag_name_1.TAG_CONST[i]);

@@ -39,20 +39,20 @@ router.get(
       const { projection } = await getProjection();
       const userToken = getToken(req as any);
 
-      const halfMonthAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 15);
+      const halfMonthAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 60);
 
       if (tag === "recommend" && userToken?.id) {
         const recommendTag = await getRecommendedArticle(userToken?.id);
         if (recommendTag[0].label) {
           query = await articleModel
             .find({ tag: recommendTag[0].label }, projection)
-            .sort({ ["publish_time"]: -1 })
+            .sort({ publish_time: -1 })
             .skip(skipNum)
             .limit(currentNum);
         } else {
           query = await articleModel
-            .find({ publish_date: { $gte: halfMonthAgo } }, projection)
-            .sort({ ["read_count"]: -1 })
+            .find({ publish_time: { $gte: halfMonthAgo } }, projection)
+            .sort({ read_count: -1 })
             .skip(skipNum)
             .limit(currentNum);
         }
@@ -65,7 +65,7 @@ router.get(
       } else {
         query = await articleModel
           .find({ tag }, projection)
-          .sort({ ["publish_time"]: -1 })
+          .sort({ publish_time: -1 })
           .skip(skipNum)
           .limit(currentNum);
         article_count = await articleModel

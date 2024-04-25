@@ -51,11 +51,11 @@ picRoute(app);
 feedbackRouter(app);
 searchRouter(app);
 
-// schedule.scheduleJob("0 */12 * * *", async () => {
-//   console.log("定时任务执行");
-//   for (let i = 0; i < TAG_CONST.length; i++) {
-//     await crawler(TAG_CONST[i]);
-//   }
-// });
+schedule.scheduleJob("0 */12 * * *", async () => {
+  console.log("定时任务执行");
+  for (let i = 0; i < TAG_CONST.length; i++) {
+    await crawler(TAG_CONST[i]);
+  }
+});
 
 app.listen(port, () => console.log(`http://localhost:3001`));

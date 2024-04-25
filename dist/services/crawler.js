@@ -69,6 +69,11 @@ const crawler = (type) => __awaiter(void 0, void 0, void 0, function* () {
                 continue;
             }
             let tag = contentData.tag;
+            // 保护这个标签
+            if (!constant_tag_name_1.TAG_CONST.includes(tag)) {
+                // tag = TAG_CONST[Math.floor(Math.random() * TAG_CONST.length)];
+                continue;
+            }
             // 查找当前文章是否存在
             const currentArticle = yield article_1.default.findOne({ title });
             const { data: detailData } = yield axios_1.default.get(`http://m.toutiao.com${contentData.source_url}info/`);
@@ -116,10 +121,6 @@ const crawler = (type) => __awaiter(void 0, void 0, void 0, function* () {
                 throw new Error("用户不存在");
             }
             const id = userAct._id;
-            // 保护这个标签
-            if (!constant_tag_name_1.TAG_CONST.includes(tag)) {
-                tag = constant_tag_name_1.TAG_CONST[Math.floor(Math.random() * constant_tag_name_1.TAG_CONST.length)];
-            }
             const dealContent = yield (0, picReChange_1.picReChange)(detail.content, `${title}-${new Date()}-details`);
             const imageList = image_list || (middle_image === null || middle_image === void 0 ? void 0 : middle_image.url_list) || [];
             const transformImageList = imageList.map((item) => item.url);
